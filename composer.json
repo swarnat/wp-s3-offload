@@ -1,0 +1,8 @@
+{
+    "name" : "stefan-warnat/wp-s3-offload",
+    "description": "GravS3 Media Offloading",
+    "type": "wordpress-plugin",
+    "require" : {
+      "php": ">=8.0"
+    }
+  }

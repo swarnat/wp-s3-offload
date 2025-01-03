@@ -1,0 +1,4 @@
+include:
+  - project: 'warnat-wordpress/ci'
+    ref: main
+    file: 'package-composer.yml'
