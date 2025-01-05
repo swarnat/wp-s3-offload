@@ -13,6 +13,7 @@ class Admin
 
         add_action('admin_post_s3_sync', [$this, 'admin_post_s3_sync'], 10, 0);
         add_action('admin_post_s3_sync_batch', [$this, 'admin_post_s3_sync_batch'], 10, 0);
+        add_action('admin_post_s3_test_connection', [$this, 'admin_post_s3_test_connection'], 10, 0);
 
         add_action('delete_attachment', [$this, 'handle_delete_media'], 10);
 
@@ -202,6 +203,20 @@ define('WPS3_ENDPOINT', 'S3-ENDPOINT');
         }
 
         return $actions;
+    }
+
+    public function admin_post_s3_test_connection()
+    {
+        try {
+            $syncerObj = new Syncer();
+            $testResult = $syncerObj->testConnection();
+
+        } catch (\Exception $exp) {
+            echo $exp->getMessage();
+            exit();
+        }
+
+        echo "OK";
     }
 
     public function admin_post_s3_sync_batch()

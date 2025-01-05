@@ -55,7 +55,7 @@ class ImageEditorImagick extends WP_Image_Editor_Imagick {
 		$file_extension = strtolower( pathinfo( $this->file, PATHINFO_EXTENSION ) );
 		$upload_dir = wp_upload_dir();
 
-		echo "<pre>";
+		// echo "<pre>";
 
 
 		if ( ! $this->file || strpos( $this->file, $upload_dir['basedir'] ) === 0 ) {
@@ -65,7 +65,7 @@ class ImageEditorImagick extends WP_Image_Editor_Imagick {
 		$temp_filename = tempnam( get_temp_dir(), 's3-uploads' ) . "." . $file_extension;
 		$this->temp_files_to_cleanup[] = $temp_filename;
 		
-		var_dump(__LINE__, $this->file, $temp_filename);
+		// var_dump(__LINE__, $this->file, $temp_filename);
 		copy( $this->file, $temp_filename );
 		$this->remote_filename = $this->file;
 		$this->file = $temp_filename;

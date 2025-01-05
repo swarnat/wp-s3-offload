@@ -16,6 +16,10 @@
     <div id="migration_protocol"></div>
 </div>
 
+<hr />
+
+<button class="button" id="test_connection">Test S3 Connection</button>
+
 <style>
     #progress_bar {
         border: 1px solid #000;

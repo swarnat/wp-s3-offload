@@ -1,6 +1,25 @@
 (function($) {
     'use strict';
 
+    $('#test_connection').on('click', function(e) {
+        $.ajax({
+            type: 'POST',
+            url: 'admin-post.php',
+            data: {
+                action: 's3_test_connection'
+            }
+        }).then(function(response) {
+            if(response != "OK") {
+                alert(response)
+            } else {
+                alert("Test successfully.")
+            }
+
+            
+        })
+
+    })
+
     $('#start_batch_migration').on('click', function(e) {
         const step = Math.round(100 / $('#migration_log').data('count'));
         let currentPercent = 0;

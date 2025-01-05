@@ -202,6 +202,31 @@ class Syncer
         }
     }
 
+    public function testConnection() {
+        $testString = "TEST" . sha1(mt_rand(100000,999999));
+        $filename = mt_rand(100000,999999);
+
+        $testfile = tempnam(sys_get_temp_dir(), 'S3Test');
+        file_put_contents($testfile, $testString);
+
+        $targetKey = "test/testfile" . $filename;
+        $this->uploadToS3($testfile, $targetKey);
+
+        $newUrl = $this->s3->getObjectUrl($this->options['bucket'], $targetKey);
+
+        if(trim(file_get_contents($newUrl)) != $testString) {
+            throw new \Exception("UPload test not successfully");
+        }
+
+        $this->s3->deleteObject([
+            'Bucket' => $this->options['bucket'],
+            'Key'    => $targetKey,
+        ]);
+
+        return true;
+
+    }
+
     public function checkConnection() {
         $params = [
             "Bucket" => $this->options['bucket'],
