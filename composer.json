@@ -1,0 +1,8 @@
+{
+    "name" : "swarnat/wpd-migration",
+    "description": "WPD Migration Assistant",
+    "type": "wordpress-plugin",
+    "require" : {
+      "php": ">=7.4"
+    }
+  }
