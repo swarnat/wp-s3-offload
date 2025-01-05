@@ -22,18 +22,19 @@ class Loader
             $admin->load_hooks();
         }
 
-        require_once(WPS3_PLUGIN_BASE_DIR . 'includes' . DIRECTORY_SEPARATOR . 'syncer.php');
-        require_once(WPS3_PLUGIN_BASE_DIR . 'includes' . DIRECTORY_SEPARATOR . 'frontend.php');
+        if(defined("WPS3_KEY") && defined('WPS3_SECRET') && defined('WPS3_BUCKET')) {
+            require_once(WPS3_PLUGIN_BASE_DIR . 'includes' . DIRECTORY_SEPARATOR . 'syncer.php');
+            require_once(WPS3_PLUGIN_BASE_DIR . 'includes' . DIRECTORY_SEPARATOR . 'frontend.php');
+        
+            $frontend = new Frontend();
+            $frontend->load_hooks();
 
-        $frontend = new Frontend();
-        $frontend->load_hooks();
+            self::$Syncer = new Syncer();
+            // self::$Syncer->registerStreamWrapper();
 
-        self::$Syncer = new Syncer();
-        // self::$Syncer->registerStreamWrapper();
-
-        // get_attached_file
-        self::$Syncer->load_hooks();
-
+            // get_attached_file
+            self::$Syncer->load_hooks();
+        }
         // 
     }
 }
