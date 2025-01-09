@@ -34,6 +34,11 @@ define('WPS3_URL_PREFIX', 'https://s3.company.com/bucketname/');
 define('WPS3_ENDPOINT', 'https://s3.company.com');
 ```
 
+Changelog
+-----
+
+See [CHANGELOG.md](CHANGELOG.md)
+
 ROADMAP
 -------
 

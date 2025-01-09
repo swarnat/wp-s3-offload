@@ -16,13 +16,13 @@ class ContentReplacement {
     // 
     public function __construct() {
         $this->preFillContentCache();
-
-        do_action('wps3_replacement_contentcache', $this);
-
+        
         $files = glob(__DIR__ . '/content-replacement/*.php');
         foreach($files as $file) {
             require_once($file);
         }
+
+        do_action('wps3_replacement_contentcache', $this);        
                 
     }
 
@@ -61,17 +61,46 @@ class ContentReplacement {
 
     }
 
+    private function do_replace_in_array($array, $oldUrl, $newUrl) {
+        foreach ($array as $key => $value) {
+            if (is_array($value)) {
+                // Rekursiver Aufruf, wenn der Wert ein Array ist
+                $array[$key] = $this->do_replace_in_array($value, $oldUrl, $newUrl);
+            } elseif (is_string($value)) {
+                // Ersetzen, wenn der Wert ein String ist
+                $array[$key] = str_replace($oldUrl, $newUrl, $value);
+            }
+        }
+        return $array;    
+    }
+
+    public function replace_array($array, $oldUrl, $newUrl) {
+
+        $old = $array;
+        $array["value"] = $this->do_replace_in_array($array["value"], $oldUrl, $newUrl);
+        
+        if($old != $array) {
+            $array["changed"] = true;
+        }
+
+        return $array;
+    }
+
     public function replace($oldUrl, $newUrl) {
 
         foreach(self::$CACHE as $namespace => $keys) {
             foreach($keys as $key => $data) {
                 
-                if(strpos($data['value'], $oldUrl) !== false) {
+                if(is_string($data['value'])) {
+                    if(strpos($data['value'], $oldUrl) !== false) {
 
-                    do_action('wps3_replacement_replace_' . $namespace, $oldUrl, $newUrl);
+                        self::$CACHE[$namespace][$key]['value'] = str_replace($oldUrl, $newUrl, self::$CACHE[$namespace][$key]['value']);
+                        self::$CACHE[$namespace][$key]['changed'] = true;
 
-                    self::$CACHE[$namespace][$key]['value'] = str_replace($oldUrl, $newUrl, self::$CACHE[$namespace][$key]['value']);
-                    self::$CACHE[$namespace][$key]['changed'] = true;
+                    }
+                } else {
+
+                    self::$CACHE[$namespace][$key] = apply_filters('wps3_replacement_replace_' . $namespace, $data, $oldUrl, $newUrl);
                 }
             }
         }

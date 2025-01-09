@@ -3,7 +3,10 @@ namespace WPS3\S3\Offload;
 
 use Aws\S3\Exception\S3Exception;
 use Aws\S3\S3Client;
+use Aws\S3\StreamWrapper;
 use WP_Error;
+use WPS3\S3\Offload\Cache\File;
+use WPS3\S3\Offload\Cache\Redis;
 
 class Syncer
 {
@@ -19,6 +22,7 @@ class Syncer
     private static $NOCACHEMODE = true;
 
     private static $REGISTERED_STREAM = false;
+    private static $s3DataCache = [];    
 
     private static $BaseDir = "";
 
@@ -88,13 +92,24 @@ class Syncer
 
     public function get_attached_file($file, $attachment_id)
     {
+        if(!empty($attachment_id) && !empty(self::$s3DataCache[$attachment_id])) {
+            return self::$s3DataCache[$attachment_id];
+        }
 
-        if (!empty($file) && !file_exists($file)) {
+        if (!empty($file) && file_exists($file)) {
+            $s3_public_url = get_post_meta($attachment_id, 's3_public_url', true);
+        } else {
+            $s3_public_url = false;
+        }
+
+        if (!empty($file) && (!empty($s3_public_url) || !file_exists($file))) {
             $this->registerStreamWrapper();
 
             $relPath = get_post_meta($attachment_id, '_wp_attached_file', true);
 
-            return 's3://' . $this->options['bucket'] . '/' . $relPath;
+            self::$s3DataCache[$attachment_id] = 's3://' . $this->options['bucket'] . '/' . $relPath;
+
+            return self::$s3DataCache[$attachment_id];
         }
 
         return $file;
@@ -149,13 +164,40 @@ class Syncer
         );
     }
 
+    public function getCacheHandler() {
+
+        if(defined("WP_REDIS_HOST")) {
+
+            require_once(WPS3_PLUGIN_BASE_DIR . 'includes' . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR. 'Redis.php');
+
+            $cacheHandler = new Redis();
+
+            return;
+
+        } else {
+        
+            require_once(WPS3_PLUGIN_BASE_DIR . 'includes' . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR. 'File.php');
+
+            $hash = sha1(getcwd());
+            $tempDir = sys_get_temp_dir();
+            $cacheHandler = new File($tempDir . DIRECTORY_SEPARATOR . "wp-" . $hash);
+
+            return $cacheHandler;
+
+        }
+    }
 
     public function registerStreamWrapper()
     {
         if(self::$REGISTERED_STREAM === false) {
             // echo "<pre>";debug_print_backtrace(0, 10);
-            $this->s3->registerStreamWrapper();
-            
+            StreamWrapper::register(
+                $this->s3,
+                's3',
+                $this->getCacheHandler(),
+                true
+            );
+
             self::$REGISTERED_STREAM = true;
         }
     }
@@ -175,7 +217,15 @@ class Syncer
 
     public function syncAfterUpload($attachment_id, $metadata)
     {
-        return $this->sync($attachment_id, $metadata);
+        global $wpdb;
+
+        $metadata = $this->sync($attachment_id, $metadata);
+
+        if(!empty($metadata["s3_public_url"])) {
+            $wpdb->update( $wpdb->posts, [ 'guid' => $metadata["s3_public_url"] ], [ 'ID' => $attachment_id ] );
+        }
+
+        return $metadata;
     }
 
     public function uploadToS3($local_filename, $target_filekey, $mimetype = null)
@@ -192,9 +242,9 @@ class Syncer
             'Bucket' => $this->options['bucket'],
             'Key' => $target_filekey,
             'Body' => file_get_contents($local_filename),
-            'Content-Type' => $mimetype
+            'ContentType' => $mimetype
         ];
-
+        
         try {
             $this->s3->PutObject($params);
         } catch (S3Exception $exception) {
@@ -245,6 +295,8 @@ class Syncer
      */
     public function sync($attachment_id, $metadata = null)
     {
+        $oldGuid = get_the_guid($attachment_id);
+
         $contentReplacementInstance = ContentReplacement::getInstance();
 
         $this->registerStreamWrapper();
@@ -257,7 +309,7 @@ class Syncer
         }
 
         if (self::$NOCACHEMODE) unset($metadata['s3']); // no cache and transfer again
-
+        
         $oldUrl = wp_get_attachment_url($attachment_id);
         $updated = false;
 
@@ -302,6 +354,7 @@ class Syncer
             $metadata['s3_public_url'] = $newUrl;
             update_post_meta($attachment_id, 's3_public_url', $metadata['s3_public_url']);
 
+            $contentReplacementInstance->replace($oldGuid, $newUrl);
             $contentReplacementInstance->replace($oldUrl, $newUrl);
 
             $metadata['s3'] = [

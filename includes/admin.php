@@ -6,9 +6,12 @@ use WP_Query;
 
 class Admin
 {
+    private static $ActivePlugins = [];
+
     public function load_hooks()
     {
 
+        add_filter('admin_init', [$this, 'admin_init'], 999);
         add_filter('media_row_actions', [$this, 'media_row_actions'], 10, 3);
 
         add_action('admin_post_s3_sync', [$this, 'admin_post_s3_sync'], 10, 0);
@@ -31,10 +34,37 @@ class Admin
         $this->checkConfiguration();
     }
 
+    public function admin_init() {
+        $this->apply_workarounds();
+    }
     public function admin_menu()
     {
         add_options_page('WP S3 Media', 'WP S3 Media', 'manage_options', 'wp-s3-media-offloading', array($this, 'options_page'));
     }
+
+    public function is_plugin_active($plugin) {
+        return in_array( $plugin, self::$ActivePlugins, true ) || is_plugin_active_for_network( $plugin );
+    }
+
+    public function apply_workarounds() {
+        self::$ActivePlugins = (array) get_option( 'active_plugins', array() );
+
+        ######## 
+        $plugin = "wp-optimize/wp-optimize.php";
+        if($this->is_plugin_active($plugin)) {
+            $manager = \Updraft_Smush_Manager();
+            remove_filter('manage_media_columns', array($manager, 'manage_media_columns'));
+        }
+
+        ######## 
+
+        $plugin = "shortpixel-image-optimiser/wp-shortpixel.php";
+        if($this->is_plugin_active($plugin)) {
+            // enable the offloading mode for plugin
+            add_filter('shortpixel/file/virtual/heavy_features', "__return_false");
+        }
+    }
+
 
     public function wp_generate_attachment_metadata($metadata, $attachment_id, $type)
     {
