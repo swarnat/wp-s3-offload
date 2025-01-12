@@ -10,10 +10,8 @@ class Redis implements CacheInterface
     public function __construct()
     {
 
-        $this->redis = new \Redis([
-            'host' => constant("WP_REDIS_HOST"),
-            'port' => 6379,
-        ]);
+        $this->redis = new \Redis();
+        $this->redis->pconnect(constant("WP_REDIS_HOST"), 6379);
         
     }
 

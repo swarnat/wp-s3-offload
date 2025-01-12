@@ -2,7 +2,7 @@
 /**
  * @wordpress-plugin
  * Plugin Name:       WP Media S3 offloading
- * Version:           1.2.4
+ * Version:           1.2.5
  * Description:		  Upload and manage files on S3 Storage to Offload media
  * Author:            Stefan Warnat
  * License:           LGPL-3.0+

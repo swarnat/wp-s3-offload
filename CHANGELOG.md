@@ -1,3 +1,6 @@
+# 1.2.5 - 2025-01-12
+ - Make Redis Cache compatible to older PHP versions
+
 # 1.2.4 - 2025-01-09
  - Add Revolution Slider support for replacing Media URL
  - Implement CacheInterface for S3 usage
